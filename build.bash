@@ -1,0 +1,1 @@
+gcc main.c -s -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
