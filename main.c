@@ -19,7 +19,8 @@ int main(void)
 
    const int rows = ceil(screenWidth / convergeRange);
    const int columns = ceil(screenHeight / convergeRange);
-   printf("%d : %d",rows,columns);
+   printf("%d : %d", rows, columns);
+   
    int grid[columns][rows][boidsQty];
    double boids[boidsQty][4];
    int i;
@@ -41,20 +42,18 @@ int main(void)
 
       ClearBackground(RAYWHITE);
 
-
       // DRAW
       drawBoids(boids, boidsQty, boidsSize);
       // debug
-      debugBoid(boids[0],convergeRange);
+      debugBoid(boids[0], convergeRange);
       for (int i = 0; i < screenHeight; i += convergeRange)
       {
-         DrawLine(0,i,screenWidth,i,BLUE);
+         DrawLine(0, i, screenWidth, i, BLUE);
       }
       for (int i = 0; i < screenWidth; i += convergeRange)
       {
-         DrawLine(i,0,i,screenHeight,BLUE);
+         DrawLine(i, 0, i, screenHeight, BLUE);
       }
-
       EndDrawing();
    }
 
@@ -104,14 +103,26 @@ int updateBoids(double boids[][4], int size, int maxInfluence, int divergeRange,
    {
       double influence = 0;
       int neighbors = 1;
-      for (j = 0; j < size; j++)
-      {
-         if (neighbors == maxInfluence)
-            break;
+      int neighborsArr[size];
+      const int posX = floor(boids[i][1] / convergeRange);
+      const int posY = floor(boids[i][0] / convergeRange);
 
+       //if (i == 0){
+       //   for (int k = 0; k < size; k ++){
+       //      if (grid[posX][posY][k]==0 || grid[posX][posY][k] > size) break;
+       //      int index = grid[posX][posY][k];
+       //      printf("NEIIIIGBOR %d %d\n",boids[index][0],boids[index][1]);
+       //      DrawCircle(boids[index][0],boids[index][1],10,YELLOW);
+       //   }
+       
+       for (j = 0; j < size; j++)
+      {
+          if (neighbors == maxInfluence)
+             break;
+      
          if (boids[j][0] != boids[i][0] && boids[j][1] != boids[i][1])
          {
-
+      
             double dist;
             dist = sqrt(pow(boids[j][0] - boids[i][0], 2) + pow(boids[j][1] - boids[i][1], 2));
             if (dist < divergeRange)
@@ -161,21 +172,21 @@ int drawBoids(double boids[][4], int size, int boidsSize)
    }
 }
 
-int debugBoid(double boid[4],int convergeRange)
+int debugBoid(double boid[4], int convergeRange)
 {
    printf("x : %f \n y : %f \n a : %f \n v : %f \n", boid[0], boid[1], boid[2], boid[3]);
    const int posX = floor(boid[1] / convergeRange);
    const int posY = floor(boid[0] / convergeRange);
-   DrawRectangle(posY*convergeRange,posX*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY-1)*convergeRange,posX*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY+1)*convergeRange,posX*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle(posY*convergeRange,(posX-1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle(posY*convergeRange,(posX+1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY-1)*convergeRange,(posX+1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY+1)*convergeRange,(posX-1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY-1)*convergeRange,(posX-1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawRectangle((posY+1)*convergeRange,(posX+1)*convergeRange,convergeRange,convergeRange,(Color){100,0,100,150});
-   DrawCircle(boid[0],boid[1],convergeRange,(Color) {0,255,0,150});
-   DrawCircle(boid[0],boid[1],5,RED);
+   DrawRectangle(posY * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY - 1) * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY + 1) * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle(posY * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle(posY * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY - 1) * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY + 1) * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY - 1) * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posY + 1) * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawCircle(boid[0], boid[1], convergeRange, (Color){0, 255, 0, 150});
+   DrawCircle(boid[0], boid[1], 5, RED);
    printf("\n");
 }
