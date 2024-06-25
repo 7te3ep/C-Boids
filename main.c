@@ -9,7 +9,7 @@ int main(void)
    SetTraceLogLevel(LOG_WARNING);
    const int screenWidth = 1600;
    const int screenHeight = 900;
-   const int boidsQty = 700;
+   const int boidsQty = 3100;
    const int boidsSize = 10;
    const int boidsSpeed = 3;
    const int maxInfluence = 6;
@@ -17,11 +17,11 @@ int main(void)
    const int convergeRange = 60;
    const int influenceStrenght = 5;
 
-   const int rows = ceil(screenWidth / convergeRange);
-   const int columns = ceil(screenHeight / convergeRange);
-   printf("%d : %d", rows, columns);
-   
-   int grid[columns][rows][boidsQty];
+   const int columns = ceil((double)screenWidth / convergeRange);
+   const int rows = ceil((double)screenHeight / convergeRange);
+   printf("%d : %d \n\n", rows, columns);
+
+   int grid[rows * columns * boidsQty];
    double boids[boidsQty][4];
    int i;
    for (i = 0; i < boidsQty; i++)
@@ -44,16 +44,18 @@ int main(void)
 
       // DRAW
       drawBoids(boids, boidsQty, boidsSize);
-      // debug
-      debugBoid(boids[0], convergeRange);
-      for (int i = 0; i < screenHeight; i += convergeRange)
-      {
-         DrawLine(0, i, screenWidth, i, BLUE);
-      }
-      for (int i = 0; i < screenWidth; i += convergeRange)
-      {
-         DrawLine(i, 0, i, screenHeight, BLUE);
-      }
+      //// debug
+      //debugBoid(boids[0], convergeRange, boids, grid, boidsQty, rows, columns);
+//
+      //for (int i = 0; i < screenHeight; i += convergeRange)
+      //{
+      //   DrawLine(0, i, screenWidth, i, BLUE);
+      //}
+      //for (int i = 0; i < screenWidth; i += convergeRange)
+      //{
+      //   DrawLine(i, 0, i, screenHeight, BLUE);
+      //}
+
       EndDrawing();
    }
 
@@ -61,74 +63,94 @@ int main(void)
    return 0;
 }
 
-int fillGrid(double boids[][4], int size, int rows, int columns, int grid[][rows][size], int convergeRange)
+int fillGrid(double boids[][4], int size, int rows, int columns, int grid[], int convergeRange)
 {
    // reset grid
-   for (int i = 0; i < columns; i++)
+   for (int i = 0; i < (columns * rows * size); i++)
    {
-      for (int j = 0; j < rows; j++)
+      grid[i] = -1;
+   }
+
+   for (int i = 0; i < size; i++)
+   {
+      // get grid pos
+      const int posX = floor(boids[i][0] / convergeRange);
+      const int posY = floor(boids[i][1] / convergeRange);
+
+      // get last index in array
+      int posInArr = (posY * columns * size) + (posX * size);
+      for (int j = posInArr; j < posInArr + size; j++)
       {
-         for (int k = 0; k < size; k++)
+         if (grid[j] == -1)
          {
-            grid[i][j][k] = 0;
+            grid[j] = i;
+            break;
          }
       }
    }
-
-   int i;
-   for (i = 0; i < size; i++)
-   {
-      // get grid pos
-      const int posX = floor(boids[i][1] / convergeRange);
-      const int posY = floor(boids[i][0] / convergeRange);
-
-      // get last index in array
-      int index = 0;
-      int j;
-      for (j = 0; j < size; j++)
-      {
-         if (grid[posX][posY][j] == 0)
-            break;
-         index += 1;
-      }
-      grid[posX][posY][index] = i;
-   }
 }
 
-int updateBoids(double boids[][4], int size, int maxInfluence, int divergeRange, int convergeRange, int influenceStrenght, int width, int height, int rows, int columns, int grid[][rows][size])
+int updateBoids(double boids[][4], int size, int maxInfluence, int divergeRange, int convergeRange, int influenceStrenght, int width, int height, int rows, int columns, int grid[])
 {
-   int i;
-   int j;
-   for (i = 0; i < size; i++)
+   for (int i = 0; i < size; i++)
    {
       double influence = 0;
       int neighbors = 1;
       int neighborsArr[size];
-      const int posX = floor(boids[i][1] / convergeRange);
-      const int posY = floor(boids[i][0] / convergeRange);
+      int neighborsArrIndex = 0;
 
-       //if (i == 0){
-       //   for (int k = 0; k < size; k ++){
-       //      if (grid[posX][posY][k]==0 || grid[posX][posY][k] > size) break;
-       //      int index = grid[posX][posY][k];
-       //      printf("NEIIIIGBOR %d %d\n",boids[index][0],boids[index][1]);
-       //      DrawCircle(boids[index][0],boids[index][1],10,YELLOW);
-       //   }
-       
-       for (j = 0; j < size; j++)
+      for (int j = 0; j < size; j++)
       {
-          if (neighbors == maxInfluence)
-             break;
-      
-         if (boids[j][0] != boids[i][0] && boids[j][1] != boids[i][1])
+         neighborsArr[j] = -1;
+      }
+
+      const int posX = floor(boids[i][0] / convergeRange);
+      const int posY = floor(boids[i][1] / (convergeRange + 1));
+      int pos = (posY * columns * size) + (posX * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY > 0)
+         pos = ((posY - 1) * columns * size) + (posX * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY < rows - 1)
+         pos = ((posY + 1) * columns * size) + (posX * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posX > 0)
+         pos = (posY * columns * size) + ((posX - 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posX < columns - 1)
+         pos = (posY * columns * size) + ((posX + 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY > 0 && posX > 0)
+         pos = ((posY - 1) * columns * size) + ((posX - 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY < rows - 1 && posX < columns - 1)
+         pos = ((posY + 1) * columns * size) + ((posX + 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY < rows - 1 && posX > 0)
+         pos = ((posY + 1) * columns * size) + ((posX - 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+      if (posY > 0 && posX < columns - 1)
+         pos = ((posY - 1) * columns * size) + ((posX + 1) * size);
+      neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+
+      for (int j = 0; j < size; j++)
+      {
+         if (neighborsArr[j] == -1)
+            break;
+
+         const int index = neighborsArr[j];
+         if (neighbors == maxInfluence)
+            break;
+
+         if (boids[index][0] != boids[i][0] && boids[index][1] != boids[i][1])
          {
-      
+
             double dist;
-            dist = sqrt(pow(boids[j][0] - boids[i][0], 2) + pow(boids[j][1] - boids[i][1], 2));
+            dist = sqrt(pow(boids[index][0] - boids[i][0], 2) + pow(boids[index][1] - boids[i][1], 2));
             if (dist < divergeRange)
             {
                neighbors += 1;
-               if (boids[j][2] < boids[i][2])
+               if (boids[index][2] < boids[i][2])
                   influence += influenceStrenght;
                else
                   influence -= influenceStrenght;
@@ -136,13 +158,14 @@ int updateBoids(double boids[][4], int size, int maxInfluence, int divergeRange,
             else if (dist < convergeRange)
             {
                neighbors += influenceStrenght;
-               if (boids[j][2] < boids[i][2])
+               if (boids[index][2] < boids[i][2])
                   influence -= influenceStrenght;
                else
                   influence += influenceStrenght;
             }
          }
       }
+
       boids[i][2] += influence / (neighbors);
       boids[i][0] += boids[i][3] * cos((boids[i][2]) * PI / 180);
       boids[i][1] += boids[i][3] * sin((boids[i][2]) * PI / 180);
@@ -172,21 +195,85 @@ int drawBoids(double boids[][4], int size, int boidsSize)
    }
 }
 
-int debugBoid(double boid[4], int convergeRange)
+int addNeighbors(int neighborsArr[], int pos, int index, int size, int grid[])
 {
-   printf("x : %f \n y : %f \n a : %f \n v : %f \n", boid[0], boid[1], boid[2], boid[3]);
-   const int posX = floor(boid[1] / convergeRange);
-   const int posY = floor(boid[0] / convergeRange);
-   DrawRectangle(posY * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY - 1) * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY + 1) * convergeRange, posX * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle(posY * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle(posY * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY - 1) * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY + 1) * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY - 1) * convergeRange, (posX - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
-   DrawRectangle((posY + 1) * convergeRange, (posX + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   for (int j = pos; j < pos + size; j++)
+   {
+      if (grid[j] == -1)
+         break;
+      neighborsArr[index] = grid[j];
+      index += 1;
+   }
+
+   return index;
+}
+
+int debugBoid(double boid[4], int convergeRange, double boids[][4], int grid[], int size, int rows, int columns)
+{
+   printf("x : %f \n y : %f \n a : %f \n v : %f \n|n", boid[0], boid[1], boid[2], boid[3]);
+   double influence = 0;
+   int neighbors = 1;
+   int neighborsArr[size];
+   int neighborsArrIndex = 0;
+
+   for (int j = 0; j < size; j++)
+   {
+      neighborsArr[j] = -1;
+   }
+
+   const int posX = floor(boid[0] / convergeRange);
+   const int posY = floor(boid[1] / (convergeRange));
+
+   DrawRectangle(posX * convergeRange, posY * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX - 1) * convergeRange, posY * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX + 1) * convergeRange, posY * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle(posX * convergeRange, (posY - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle(posX * convergeRange, (posY + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX - 1) * convergeRange, (posY + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX + 1) * convergeRange, (posY - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX - 1) * convergeRange, (posY - 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
+   DrawRectangle((posX + 1) * convergeRange, (posY + 1) * convergeRange, convergeRange, convergeRange, (Color){100, 0, 100, 150});
    DrawCircle(boid[0], boid[1], convergeRange, (Color){0, 255, 0, 150});
-   DrawCircle(boid[0], boid[1], 5, RED);
-   printf("\n");
+
+   int x = boid[0];
+   int y = boid[1];
+   double angle = boid[2];
+   Vector2 point1 = {20 * cos(angle * PI / 180),            20 * sin(angle * PI / 180)};
+   Vector2 point2 = {20 / 2 * cos((angle - 90) * PI / 180), 20 / 2 * sin((angle - 90) * PI / 180)};
+   Vector2 point3 = {20 / 2 * cos((angle + 90) * PI / 180), 20 / 2 * sin((angle + 90) * PI / 180)};
+   DrawTriangle((Vector2){x + point1.x, y + point1.y}, (Vector2){x + point2.x, y + point2.y}, (Vector2){x + point3.x, y + point3.y}, RED);
+
+   int pos = (posY * columns * size) + (posX * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY > 0)
+      pos = ((posY - 1) * columns * size) + (posX * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY < rows - 1)
+      pos = ((posY + 1) * columns * size) + (posX * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posX > 0)
+      pos = (posY * columns * size) + ((posX - 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posX < columns - 1)
+      pos = (posY * columns * size) + ((posX + 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY > 0 && posX > 0)
+      pos = ((posY - 1) * columns * size) + ((posX - 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY < rows - 1 && posX < columns - 1)
+      pos = ((posY + 1) * columns * size) + ((posX + 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY < rows - 1 && posX > 0)
+      pos = ((posY + 1) * columns * size) + ((posX - 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+   if (posY > 0 && posX < columns - 1)
+      pos = ((posY - 1) * columns * size) + ((posX + 1) * size);
+   neighborsArrIndex = addNeighbors(neighborsArr, pos, neighborsArrIndex, size, grid);
+
+   for (int j = 0; j < size; j++)
+   {
+      if (neighborsArr[j] == -1)
+         break;
+      DrawCircle(boids[neighborsArr[j]][0], boids[neighborsArr[j]][1], 1, YELLOW);
+   }
 }
